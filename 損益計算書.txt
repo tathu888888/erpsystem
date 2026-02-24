@@ -1,0 +1,49 @@
+SELECT '売上高' AS label,
+       COALESCE(SUM(CASE WHEN am.account_type='REVENUE' THEN (gl.credit - gl.debit) END),0) AS amount
+FROM gl_journal_header gh
+JOIN gl_journal_line gl ON gl.journal_id = gh.journal_id
+JOIN account_master am ON am.account_code = gl.account_code
+WHERE gh.posted = 1
+
+UNION ALL
+SELECT '売上原価' AS label,
+       COALESCE(SUM(CASE WHEN am.account_code='5000' THEN (gl.debit - gl.credit) END),0) AS amount
+FROM gl_journal_header gh
+JOIN gl_journal_line gl ON gl.journal_id = gh.journal_id
+JOIN account_master am ON am.account_code = gl.account_code
+WHERE gh.posted = 1
+
+UNION ALL
+SELECT '売上総利益' AS label,
+       (
+         -- 売上
+         COALESCE(SUM(CASE WHEN am.account_type='REVENUE' THEN (gl.credit - gl.debit) END),0)
+         -
+         -- 原価(5000)
+         COALESCE(SUM(CASE WHEN am.account_code='5000' THEN (gl.debit - gl.credit) END),0)
+       ) AS amount
+FROM gl_journal_header gh
+JOIN gl_journal_line gl ON gl.journal_id = gh.journal_id
+JOIN account_master am ON am.account_code = gl.account_code
+WHERE gh.posted = 1
+
+UNION ALL
+SELECT '販売費及び一般管理費' AS label,
+       COALESCE(SUM(CASE WHEN am.account_type='EXPENSE' AND am.account_code <> '5000'
+                         THEN (gl.debit - gl.credit) END),0) AS amount
+FROM gl_journal_header gh
+JOIN gl_journal_line gl ON gl.journal_id = gh.journal_id
+JOIN account_master am ON am.account_code = gl.account_code
+WHERE gh.posted = 1
+
+UNION ALL
+SELECT '営業利益' AS label,
+       (
+         COALESCE(SUM(CASE WHEN am.account_type='REVENUE' THEN (gl.credit - gl.debit) END),0)
+         -
+         COALESCE(SUM(CASE WHEN am.account_type='EXPENSE' THEN (gl.debit - gl.credit) END),0)
+       ) AS amount
+FROM gl_journal_header gh
+JOIN gl_journal_line gl ON gl.journal_id = gh.journal_id
+JOIN account_master am ON am.account_code = gl.account_code
+WHERE gh.posted = 1;

@@ -1,0 +1,12 @@
+SELECT
+  am.account_type,
+  am.account_code,
+  am.account_name,
+  SUM(gl.debit - gl.credit) AS balance
+FROM gl_journal_header gh
+JOIN gl_journal_line gl ON gl.journal_id = gh.journal_id
+JOIN account_master am ON am.account_code = gl.account_code
+WHERE gh.posted = 1
+  AND am.account_type IN ('ASSET','LIABILITY','EQUITY')
+GROUP BY am.account_type, am.account_code, am.account_name
+ORDER BY am.account_type, am.account_code;
