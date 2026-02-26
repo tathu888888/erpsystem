@@ -1,0 +1,16 @@
+CREATE TABLE bom_header (
+  bom_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  assembly_item_id BIGINT NOT NULL,
+  bom_code VARCHAR(50) NULL,
+  revision VARCHAR(20) NOT NULL DEFAULT 'A',
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  effective_from DATE NULL,
+  effective_to DATE NULL,
+  notes VARCHAR(255) NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_bom_header_item
+    FOREIGN KEY (assembly_item_id) REFERENCES item_master(item_id)
+) ENGINE=InnoDB;
+
+CREATE INDEX idx_bom_header_item ON bom_header(assembly_item_id, is_active);

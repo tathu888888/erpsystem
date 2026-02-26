@@ -1,0 +1,77 @@
+CREATE TABLE bom_line (
+  bom_line_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  bom_id BIGINT NOT NULL,
+  component_item_id BIGINT NOT NULL,
+  qty_per DECIMAL(18,6) NOT NULL,            -- 完成品1個(または1箱)あたり必要数量
+  uom VARCHAR(20) NULL,                       -- 任意（unit1/unit2と合わせるなら不要）
+  scrap_rate DECIMAL(9,6) NOT NULL DEFAULT 0, -- 部品のロス率
+  issue_method ENUM('BACKFLUSH','MANUAL') NOT NULL DEFAULT 'BACKFLUSH',
+  sort_no INT NOT NULL DEFAULT 1,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_bom_line_header
+    FOREIGN KEY (bom_id) REFERENCES bom_header(bom_id),
+  CONSTRAINT fk_bom_line_component
+    FOREIGN KEY (component_item_id) REFERENCES item_master(item_id),
+  UNIQUE KEY uq_bom_component (bom_id, component_item_id)
+) ENGINE=InnoDB;
+
+CREATE INDEX idx_bom_line_bom ON bom_line(bom_id, sort_no);
+
+
+
+
+CREATE TABLE work_order_component (
+  wo_comp_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  wo_id BIGINT NOT NULL,
+  component_item_id BIGINT NOT NULL,
+  qty_required DECIMAL(18,6) NOT NULL,
+  qty_issued DECIMAL(18,6) NOT NULL DEFAULT 0,
+  issue_method ENUM('BACKFLUSH','MANUAL') NOT NULL DEFAULT 'BACKFLUSH',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_wo_comp_wo
+    FOREIGN KEY (wo_id) REFERENCES work_order_header(wo_id),
+  CONSTRAINT fk_wo_comp_item
+    FOREIGN KEY (component_item_id) REFERENCES item_master(item_id),
+  UNIQUE KEY uq_wo_component (wo_id, component_item_id)
+) ENGINE=InnoDB;
+
+
+
+
+CREATE TABLE work_order_issue (
+  issue_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  wo_id BIGINT NOT NULL,
+  component_item_id BIGINT NOT NULL,
+  lot_id BIGINT NULL,                         -- ロット管理するなら
+  qty_issued DECIMAL(18,6) NOT NULL,
+  issue_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ref_type VARCHAR(20) NOT NULL DEFAULT 'WO_ISSUE',
+  ref_id BIGINT NULL,
+  created_by BIGINT NULL,
+  CONSTRAINT fk_wo_issue_wo
+    FOREIGN KEY (wo_id) REFERENCES work_order_header(wo_id),
+  CONSTRAINT fk_wo_issue_item
+    FOREIGN KEY (component_item_id) REFERENCES item_master(item_id)
+) ENGINE=InnoDB;
+
+CREATE INDEX idx_wo_issue_wo ON work_order_issue(wo_id, issue_date);
+
+
+CREATE TABLE work_order_receipt (
+  receipt_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  wo_id BIGINT NOT NULL,
+  assembly_item_id BIGINT NOT NULL,
+  lot_id BIGINT NULL,                         -- 完成品ロット
+  qty_received DECIMAL(18,6) NOT NULL,
+  receipt_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_by BIGINT NULL,
+  CONSTRAINT fk_wo_receipt_wo
+    FOREIGN KEY (wo_id) REFERENCES work_order_header(wo_id),
+  CONSTRAINT fk_wo_receipt_item
+    FOREIGN KEY (assembly_item_id) REFERENCES item_master(item_id)
+) ENGINE=InnoDB;
+
+CREATE INDEX idx_wo_receipt_wo ON work_order_receipt(wo_id, receipt_date);
